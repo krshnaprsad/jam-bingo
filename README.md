@@ -2,7 +2,7 @@
 
 Bingo with friends, with a twist: you can freeze their squares.
 
-Made by Zero3.
+Made by [Zero3](https://www.zero3creatives.net/).
 
 ## Why I built Jam Bingo
 
