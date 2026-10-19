@@ -24,16 +24,22 @@ Open the game: https://krshnaprsad.github.io/jam-bingo/
 
 Create a room, send the 4 letter code (or the invite link) to your friends, and start when everyone is in. Keep the host's tab open, it runs the game.
 
+## Install it as an app
+
+Jam Bingo is a web app you can install, no app store needed. On Android or Chrome, tap Install when the game offers it (or use the browser menu). On iPhone, tap Share, then Add to Home Screen. It opens full screen with its own icon, and a solo game against the bot works even without internet. Rooms with friends still need internet, the players connect straight to each other.
+
 ## Things to know
 
 - Players connect straight to each other (WebRTC). There is no game server and nothing is stored. The free Trystero library uses public relays only to introduce the browsers to each other.
 - Some work, school and mobile networks block direct connections. If a friend cannot join, try another network or a phone hotspot.
 - If the host closes the tab, the round ends for everyone.
+- Sounds are part of the fun: taps pop, called numbers bloop, jams zap and freeze, knock-outs thud, and the winner gets a fanfare plus the browser shouting "BINGO!". Every sound is made in code, there are no audio files. The shout uses the device's own speech voice, so it sounds a little different on each phone and laptop.
+- The speaker button at the top right mutes everything and remembers your choice.
 - If you see an old version, press Ctrl+F5.
 
 ## Run the tests
 
-`node game.test.js` checks the card rules, calling, jams and winning.
+`npm test` checks the card rules, calling, jams and winning (`game.test.js`), that the sound module plays and mutes correctly (`sound.test.js`), and that the app-install files are in place (`pwa.test.js`).
 
 ## Licence
 
