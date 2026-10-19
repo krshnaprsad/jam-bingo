@@ -4,6 +4,10 @@ Bingo with friends, with a twist: you can freeze their squares.
 
 Made by Zero3.
 
+## Why I built Jam Bingo
+
+Playing normal bingo is normal. I thought it would be fun to add a feature where you can jam the other player, which makes the game a bit harder. It is not just for two people either, any number can play. I felt that was a really fun option, so I made a game like Jam Bingo.
+
 ## What it does
 
 I wanted a bingo game I could send to friends without anyone making an account or me paying for a server. So I built one.
