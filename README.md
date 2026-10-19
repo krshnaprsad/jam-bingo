@@ -14,7 +14,7 @@ I wanted a bingo game I could send to friends without anyone making an account o
 
 Everyone gets a card. A number is called every few seconds. Tap it on your card once it has been called. First full line wins, so press BINGO fast.
 
-The twist is the Jam. Each player gets 3. Hit JAM, then tap an unmarked square on a rival's card to freeze it for 2 calls. A frozen square cannot be marked until it thaws.
+The twist is the Jam. Each player gets 3. Hit JAM, then tap an unmarked square on a rival's card. If that square's number was already called, the square is out for the rest of the round. If not, it is frozen for 2 calls, and if its number gets called while it is frozen, it is out too. A square that is out can never be marked, so it cannot count towards a line.
 
 Up to 6 players. Two players is a duel. You can also play against a bot, or add bots to a room.
 
