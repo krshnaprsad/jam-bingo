@@ -4,17 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jam Bingo</title>
-<link rel="stylesheet" href="app.css?v=1.1.0">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jam Bingo">
+<link rel="stylesheet" href="app.css?v=1.2.0">
 </head>
 <body>
-<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Jam Bingo</h1><p class="tag">Bingo with friends, and you can freeze their squares</p></div><span class="ver" id="ver">v1.1.0</span></header>
+<header class="hd"><span class="logo" role="img" aria-label="Zero3 Creatives"></span><div><h1>Jam Bingo</h1><p class="tag">Bingo with friends, and you can freeze their squares</p></div><button class="snd" id="snd" type="button" aria-label="Turn sound on or off" title="Sound">🔊</button><span class="ver" id="ver">v1.2.0</span></header>
 <main id="app"></main>
   <section class="card why">
     <h2>Why I built this</h2>
     <p>Playing normal bingo is normal. I thought it would be fun to add a feature where you can jam the other player, which makes the game a bit harder. It is not just for two people either, any number can play. I felt that was a really fun option, so I made a game like Jam Bingo.</p>
   </section>
 
-<script src="game.js?v=1.1.0"></script>
-<script type="module" src="app.js?v=1.1.0"></script>
+<script src="game.js?v=1.2.0"></script>
+<script src="sound.js?v=1.2.0"></script>
+<script type="module" src="app.js?v=1.2.0"></script>
 </body>
 </html>
