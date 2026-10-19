@@ -18,7 +18,7 @@
       if (!AC) return null;
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.9;
+      master.gain.value = muted ? 0 : 0.9;
       master.connect(ctx.destination);
     }
     if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
@@ -112,6 +112,7 @@
   function isMuted() { return muted; }
   function setMuted(m) {
     muted = !!m;
+    if (master) master.gain.value = muted ? 0 : 0.9;
     try { root.localStorage && root.localStorage.setItem('jb_mute', muted ? '1' : '0'); } catch (e) { }
     if (muted && root.speechSynthesis) { try { root.speechSynthesis.cancel(); } catch (e) { } }
   }
