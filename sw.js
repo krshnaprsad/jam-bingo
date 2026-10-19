@@ -1,12 +1,12 @@
 /* Jam Bingo offline cache. Bump the name when the version bumps so old files are dropped. */
-var CACHE = 'jam-bingo-v1.2.0';
+var CACHE = 'jam-bingo-v1.2.1';
 var ASSETS = [
   './',
   'index.html',
-  'app.css?v=1.2.0',
-  'game.js?v=1.2.0',
-  'sound.js?v=1.2.0',
-  'app.js?v=1.2.0',
+  'app.css?v=1.2.1',
+  'game.js?v=1.2.1',
+  'sound.js?v=1.2.1',
+  'app.js?v=1.2.1',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
