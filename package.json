@@ -1,6 +1,6 @@
 {
   "name": "jam-bingo",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Peer to peer bingo where you can freeze rival squares",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
