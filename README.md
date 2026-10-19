@@ -33,4 +33,4 @@ Create a room, send the 4 letter code (or the invite link) to your friends, and 
 
 ## Licence
 
-MIT, copyright Krishna Prasad. The Zero3 logo is not covered by the licence.
+I made this and it is free to use, including for paid work. What it is not free to do is be copied: please don't republish, redistribute or sell the code, or build your own version from it. The full terms are in [LICENSE](LICENSE). Versions published before 19 October 2026 were MIT and stay that way. The Zero3 name and logo are not part of the licence.
