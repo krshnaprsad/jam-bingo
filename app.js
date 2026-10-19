@@ -408,10 +408,12 @@ function leave(keepErr) {
 
 /* sound: the speaker button lives in the header, outside the screens that re-render */
 const $snd = document.getElementById('snd');
-function paintSnd() { if ($snd) $snd.textContent = JamSound.isMuted() ? '\u{1F507}' : '\u{1F50A}'; }
+function paintSnd() { if ($snd) { $snd.textContent = JamSound.isMuted() ? '\u{1F507}' : '\u{1F50A}'; $snd.setAttribute('aria-label', JamSound.isMuted() ? 'Unmute sound' : 'Mute sound'); $snd.setAttribute('aria-pressed', String(JamSound.isMuted())); } }
 if ($snd) $snd.onclick = () => { const m = !JamSound.isMuted(); JamSound.setMuted(m); paintSnd(); if (!m) JamSound.play('pop'); };
 paintSnd();
 document.addEventListener('pointerdown', () => JamSound.unlock(), { passive: true });
+document.addEventListener('touchend', () => JamSound.unlock(), { passive: true });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') JamSound.unlock(); });
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('button');
   if (!b || b.id === 'snd') return;
