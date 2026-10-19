@@ -24,12 +24,44 @@ const A = G.find(h, 'a'), B = G.find(h, 'b');
 G.callNext(h); G.callNext(h);
 const first = h.calls[0]; const idx = A.card.indexOf(first);
 if (idx >= 0) {
-  ok(G.jam(h, 'b', 'a', idx).ok, 'jam works'); ok(B.jams === 2, 'jam used');
-  ok(G.mark(h, 'a', idx).why === 'frozen', 'frozen blocks marking');
-  ok(G.freezeLeft(h, A, idx) === 2, 'freeze 2');
+  // jam a square whose number was already called: it is out for good
+  const r = G.jam(h, 'b', 'a', idx); ok(r.ok && r.burned === true, 'jam on called number knocks it out'); ok(B.jams === 2, 'jam used');
+  ok(A.burned[idx] === true, 'square burned');
+  ok(G.mark(h, 'a', idx).why === 'missed', 'burned square cannot be marked');
   G.callNext(h); G.callNext(h);
-  ok(G.freezeLeft(h, A, idx) === 0, 'thawed'); ok(G.mark(h, 'a', idx).ok, 'mark after thaw');
-  ok(!G.jam(h, 'b', 'a', idx).ok, 'cannot jam a marked square');
+  ok(G.freezeLeft(h, A, idx) === 0, 'no freeze left'); ok(G.mark(h, 'a', idx).why === 'missed', 'still out after the calls pass');
+  ok(!G.jam(h, 'b', 'a', idx).ok, 'cannot jam a burned square');
+}
+// jam an uncalled square: frozen, and out if its number is called while frozen
+{
+  const unc = A.card.findIndex(n => n !== 0 && h.calls.indexOf(n) < 0);
+  ok(unc >= 0, 'found uncalled square');
+  const r = G.jam(h, 'b', 'a', unc); ok(r.ok && !r.burned, 'jam on uncalled number freezes');
+  ok(G.freezeLeft(h, A, unc) === 2, 'freeze 2');
+  ok(G.mark(h, 'a', unc).why === 'frozen', 'frozen blocks marking');
+  // call until that number comes up (it is still in the pool), while frozen only for the next 2 calls
+  let guard = 0;
+  while (h.calls.indexOf(A.card[unc]) < 0 && guard++ < 80) G.callNext(h);
+  const calledWhileFrozen = h.calls.indexOf(A.card[unc]) <= h.calls.length - 1;
+  if (G.freezeLeft(h, A, unc) > 0 || A.burned[unc]) {
+    ok(A.burned[unc] === true, 'number called while frozen is burned');
+    ok(G.mark(h, 'a', unc).why === 'missed', 'cannot mark it later');
+  } else {
+    ok(G.mark(h, 'a', unc).ok, 'number called after thaw can be marked');
+  }
+}
+// a square jammed and thawed before its number is called stays markable
+{
+  const k = G.newGame('KKKK'); G.addPlayer(k, 'x', 'X'); G.addPlayer(k, 'y', 'Y'); G.start(k, rng);
+  const X = G.find(k, 'x');
+  G.callNext(k);
+  const tgt = X.card.findIndex(n => n !== 0 && k.calls.indexOf(n) < 0);
+  ok(G.jam(k, 'y', 'x', tgt).ok, 'freeze uncalled square');
+  G.callNext(k); G.callNext(k);
+  ok(G.freezeLeft(k, X, tgt) === 0 && !X.burned[tgt], 'thawed and not burned');
+  let guard = 0;
+  while (k.calls.indexOf(X.card[tgt]) < 0 && guard++ < 80) G.callNext(k);
+  ok(G.mark(k, 'x', tgt).ok, 'markable when called after thaw');
 }
 ok(!G.jam(h, 'a', 'a', 0).ok, 'no self jam');
 // win
