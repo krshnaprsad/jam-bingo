@@ -58,10 +58,11 @@ label{display:block;color:var(--dim);font-size:14px;margin:12px 0 6px}
 .sq.free{background:#10131b;color:var(--blue2);font-size:13px;letter-spacing:1px}
 .sq.win{background:#fff;color:#000;border-color:#fff}
 .sq.frozen{background:linear-gradient(135deg,#0f2433,#16384f);border-color:var(--ice);color:var(--ice);animation:freeze .5s ease}
+.sq.burned{background:#160a0e;border-color:#3d1622;color:var(--red);text-decoration:line-through;opacity:.6;cursor:not-allowed}
 .sq.frozen::after{content:attr(data-f);position:absolute;right:5px;top:2px;font-size:11px;color:var(--ice)}
 .sq.shake{animation:shake .3s}
-.aim .rival .sq:not(.on):not(.frozen):not(.free){border-color:var(--red);cursor:crosshair;box-shadow:0 0 0 1px var(--red)}
-.aim .rival .sq:not(.on):not(.frozen):not(.free):hover{background:#3a0f1a}
+.aim .rival .sq:not(.on):not(.frozen):not(.free):not(.burned){border-color:var(--red);cursor:crosshair;box-shadow:0 0 0 1px var(--red)}
+.aim .rival .sq:not(.on):not(.frozen):not(.free):not(.burned):hover{background:#3a0f1a}
 .rival{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px;margin-bottom:12px;max-width:420px}
 .rival .sq{font-size:clamp(14px,2.2vw,18px);border-radius:8px}
 .rival .top h4{margin:0;font-size:15px}
