@@ -9,10 +9,12 @@ const rng = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const letterFor = n => LETTERS[Math.min(4, Math.floor((n - 1) / 15))];
 
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const inStandalone = () => window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 let S = {
   screen: 'home', role: null, g: null, myId: 'me', name: localStorage.getItem('jb_name') || '',
-  aim: false, err: '', toast: '', code: '', sendState: null, sendAct: null, room: null, selfId: null,
-  prev: null, lastCallAt: 0, lastCalls: 0, hostId: null, timers: [], botMem: {}, calledAt: {}, joinTimer: null
+  aim: false, err: '', toast: '', code: '', sendState: null, sendAct: null, room: null, selfId: null, deferredPrompt: null,
+  prev: null, prevStatus: null, lastCallAt: 0, lastCalls: 0, hostId: null, timers: [], botMem: {}, calledAt: {}, joinTimer: null
 };
 
 /* ---------- host side: the host's browser runs the whole game ---------- */
@@ -98,12 +100,40 @@ function onState(view) {
     /* host keeps its own authoritative copy in S.g; view is only used to render */
   } else S.g = view;
   const g = (S.role === 'host' || S.role === 'solo') ? S.g : view;
-  if (g.calls.length !== S.lastCalls) { S.lastCalls = g.calls.length; S.lastCallAt = Date.now(); S.newBall = true; }
+  if (g.calls.length !== S.lastCalls) {
+    if (g.status === 'playing' && g.calls.length > 0 && S.lastCalls > 0) JamSound.play('bloop');
+    else if (g.status === 'playing' && g.calls.length === 1) JamSound.play('bloop');
+    S.lastCalls = g.calls.length; S.lastCallAt = Date.now(); S.newBall = true;
+  }
+  diffSounds(S.prev, g);
+  if (S.prevStatus === 'playing' && g.status === 'over') {
+    const w = g.winner && G.find(g, g.winner.id);
+    JamSound.play(w && w.id === S.myId ? 'win' : 'lose');
+  }
+  S.prevStatus = g.status;
   if (S.role === 'client' && S.joinTimer) { clearTimeout(S.joinTimer); S.joinTimer = null; S.err = ''; }
   if (g.status === 'playing' || g.status === 'over') S.screen = 'game';
   else if (S.screen === 'game') { S.screen = 'lobby'; S.aim = false; }
   else if (S.screen === 'home' && S.role) S.screen = 'lobby';
   render();
+}
+
+/* play a sound when the new state shows something happened: my mark, a freeze, a knock-out */
+function diffSounds(prev, g) {
+  if (!prev || !g || !g.players) return;
+  for (const p of g.players) {
+    const old = prev[p.id];
+    if (!old || !old.marks || old.marks.length !== 25 || !p.marks || p.marks.length !== 25) continue;
+    for (let i = 0; i < 25; i++) {
+      if (!old.marks[i] && p.marks[i] && p.id === S.myId && p.card[i] !== 0) { JamSound.play('pop'); return; }
+    }
+    for (let i = 0; i < 25; i++) {
+      const fr = G.freezeLeft(g, p, i) > 0;
+      const bu = !!(p.burned && p.burned[i]);
+      if (bu && !(old.bu && old.bu[i])) { JamSound.play('knock'); return; }
+      if (fr && !bu && !(old.fr && old.fr[i])) { JamSound.play('freeze'); return; }
+    }
+  }
 }
 
 function render() {
@@ -127,6 +157,7 @@ function renderHome() {
     </div>
     <label for="cd">Got a code from a friend?</label>
     <div class="row"><input type="text" id="cd" class="grow" maxlength="4" placeholder="ABCD" value="${esc(q.toUpperCase().slice(0, 4))}" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px"><button class="btn" id="jn">Join</button></div>
+    ${installHtml()}
     <div class="err" id="err">${esc(S.err)}</div>
    </section>
    <section class="card">
@@ -144,7 +175,18 @@ function renderHome() {
   document.getElementById('bot').onclick = () => { nm(); startSolo(); };
   document.getElementById('mk').onclick = () => { nm(); startHost(); };
   document.getElementById('jn').onclick = () => { nm(); startClient(document.getElementById('cd').value.trim().toUpperCase()); };
+  const ins = document.getElementById('ins'), nox = document.getElementById('nox');
+  if (ins && S.deferredPrompt) ins.onclick = () => { JamSound.play('click'); S.deferredPrompt.prompt(); S.deferredPrompt = null; renderHome(); };
+  if (nox) nox.onclick = () => { localStorage.setItem('jb_noinstall', '1'); renderHome(); };
   if (q) document.getElementById('cd').focus();
+}
+
+/* the "install as an app" hint: a real prompt on Android and Chrome, Share -> Add to Home Screen on iPhone */
+function installHtml() {
+  if (inStandalone() || localStorage.getItem('jb_noinstall') === '1') return '';
+  if (S.deferredPrompt) return `<div class="install"><span>Install Jam Bingo as an app on this device.</span><button class="btn" id="ins">Install</button><button class="x" id="nox" aria-label="Hide this">&times;</button></div>`;
+  if (isIos()) return `<div class="install"><span>On iPhone you can install this as an app: tap Share, then Add to Home Screen.</span><button class="x" id="nox" aria-label="Hide this">&times;</button></div>`;
+  return '';
 }
 
 function renderLobby() {
@@ -225,10 +267,10 @@ function renderGame() {
   ${over ? overlay(g, me) : ''}
   ${S.toast ? `<div class="toast">${esc(S.toast)}</div>` : ''}`;
   S.newBall = false;
-  S.prev = Object.fromEntries(g.players.map(p => [p.id, { marks: p.marks.slice() }]));
+  S.prev = Object.fromEntries(g.players.map(p => [p.id, { marks: p.marks.slice(), fr: p.card.map((_, i) => G.freezeLeft(g, p, i) > 0), bu: (p.burned || []).slice() }]));
   const $ = id => document.getElementById(id);
-  if ($('jm')) $('jm').onclick = () => { S.aim = !S.aim; render(); };
-  if ($('bg')) $('bg').onclick = () => { act({ t: 'claim' }, r => { if (!r.ok) { toast('No full line yet'); const b = $('bg'); if (b) { b.classList.add('shake'); } } }); };
+  if ($('jm')) $('jm').onclick = () => { S.aim = !S.aim; JamSound.play(S.aim ? 'zap' : 'click'); render(); };
+  if ($('bg')) $('bg').onclick = () => { JamSound.play('zap'); act({ t: 'claim' }, r => { if (!r.ok) { JamSound.play('nope'); toast('No full line yet'); const b = $('bg'); if (b) { b.classList.add('shake'); } } }); };
   document.querySelectorAll('.sq').forEach(el => el.onclick = () => squareTap(el));
   if ($('again')) $('again').onclick = () => { G.toLobby(S.g); S.aim = false; S.screen = 'lobby'; S.lastCalls = 0; hostPush(); };
   if ($('lv2')) $('lv2').onclick = leave;
@@ -247,6 +289,7 @@ function squareTap(el) {
   if (pid === S.myId) {
     act({ t: 'mark', i }, r => {
       if (!r.ok) {
+        JamSound.play('nope');
         const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', missed: 'That square is out. Its number was called while it was jammed', done: '' }[r.why];
         if (m) toast(m);
         el.classList.add('shake');
@@ -254,7 +297,7 @@ function squareTap(el) {
     });
   } else if (S.aim) {
     act({ t: 'jam', to: pid, i }, r => {
-      if (r.ok) { S.aim = false; toast(r.burned ? 'Number knocked out' : 'Jammed for 2 calls'); } else toast({ target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[r.why] || 'Cannot jam that');
+      if (r.ok) { S.aim = false; toast(r.burned ? 'Number knocked out' : 'Jammed for 2 calls'); } else { JamSound.play('nope'); toast({ target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[r.why] || 'Cannot jam that'); }
     });
   }
 }
@@ -339,7 +382,9 @@ async function startClient(code) {
         if (first || !G.find(S.g, S.myId)) { if (!G.find(S.g, S.myId)) hello(); }
         onState(d.g);
       } else if (d.t === 'res' && d.to === S.myId) {
-        const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', missed: 'That square is out. Its number was called while it was jammed', target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[d.why];
+        let m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', missed: 'That square is out. Its number was called while it was jammed', target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[d.why];
+        if (!m && d.kind === 'claim') m = 'No full line yet';
+        JamSound.play('nope');
         if (m) toast(m);
       }
     },
@@ -360,6 +405,23 @@ function leave(keepErr) {
   if (keepErr !== true) S.err = '';
   S.screen = 'home'; history.replaceState(null, '', location.pathname); render();
 }
+
+/* sound: the speaker button lives in the header, outside the screens that re-render */
+const $snd = document.getElementById('snd');
+function paintSnd() { if ($snd) $snd.textContent = JamSound.isMuted() ? '\u{1F507}' : '\u{1F50A}'; }
+if ($snd) $snd.onclick = () => { const m = !JamSound.isMuted(); JamSound.setMuted(m); paintSnd(); if (!m) JamSound.play('pop'); };
+paintSnd();
+document.addEventListener('pointerdown', () => JamSound.unlock(), { passive: true });
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('button');
+  if (!b || b.id === 'snd') return;
+  if (b.classList.contains('sq') || b.id === 'bg' || b.id === 'jm') return;
+  JamSound.play('click');
+});
+
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.deferredPrompt = e; if (S.screen === 'home') render(); });
+window.addEventListener('appinstalled', () => { S.deferredPrompt = null; if (S.screen === 'home') render(); });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
 
 render();
 window.__jb = S; /* handy when testing */
