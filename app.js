@@ -57,7 +57,7 @@ function botTick() {
     const m = S.botMem[b.id]; if (!m || g.status !== 'playing') return;
     for (let i = 0; i < 25; i++) {
       const n = b.card[i];
-      if (!b.marks[i] && n && S.calledAt[n] && now - S.calledAt[n] > m.react && G.freezeLeft(g, b, i) === 0) {
+      if (!b.marks[i] && !(b.burned && b.burned[i]) && n && S.calledAt[n] && now - S.calledAt[n] > m.react && G.freezeLeft(g, b, i) === 0) {
         if (G.mark(g, b.id, i).ok) { m.lastMark = now; changed = true; }
         break;
       }
@@ -74,13 +74,13 @@ function botTick() {
         G.LINES.forEach(l => {
           const done = l.filter(i => foe.marks[i]).length;
           if (done === 5) return;
-          const open = l.filter(i => !foe.marks[i] && G.freezeLeft(g, foe, i) === 0);
+          const open = l.filter(i => !foe.marks[i] && !(foe.burned && foe.burned[i]) && G.freezeLeft(g, foe, i) === 0);
           if (!open.length) return;
           const score = done + rng() * 0.8;
           if (score > bestScore) { bestScore = score; best = open; }
         });
         if (best) {
-          const hot = best.filter(i => g.calls.indexOf(foe.card[i]) < 0);
+          const hot = best.filter(i => g.calls.indexOf(foe.card[i]) >= 0);
           const pick = (hot.length ? hot : best)[Math.floor(rng() * (hot.length || best.length))];
           if (G.jam(g, b.id, foe.id, pick).ok) changed = true;
         }
@@ -134,7 +134,7 @@ function renderHome() {
     <ol class="steps">
       <li>Everyone gets a Bingo card. A number is called every few seconds.</li>
       <li>Tap a number on your card once it has been called. The first full line wins, so press BINGO fast.</li>
-      <li>The twist: you get 3 Jams. Hit JAM, then tap an unmarked square on a rival's card to freeze it for 2 calls.</li>
+      <li>The twist: you get 3 Jams. Hit JAM, then tap an unmarked square on a rival's card. If its number was already called, that square is out for the round. If not, it freezes for 2 calls, and if its number gets called while frozen, it is out too.</li>
       <li>Two players is a duel. One player plus a bot works too, handy for trying it alone.</li>
     </ol>
     <p class="note">I built this one for fun. It is free, there is no sign-up, and nothing goes through my server. Players connect straight to each other.</p>
@@ -181,15 +181,17 @@ function cardHtml(p, mine, g) {
   h += '<div class="grid5">';
   for (let i = 0; i < 25; i++) {
     const n = p.card[i], on = p.marks[i], fl = G.freezeLeft(g, p, i);
+    const burned = !on && p.burned && p.burned[i];
     const called = n && g.calls.indexOf(n) >= 0;
     const cls = ['sq'];
     if (n === 0) cls.push('free', 'on');
     else if (on) cls.push('on');
+    else if (burned) cls.push('burned');
     else if (fl > 0) cls.push('frozen');
     else if (called && mine) cls.push('called');
     if (win.indexOf(i) >= 0) cls.push('win');
     const isNew = S.prev && S.prev[p.id] && S.prev[p.id].marks[i] !== on && on;
-    h += `<button class="${cls.join(' ')}" data-p="${esc(p.id)}" data-i="${i}" ${fl > 0 ? `data-f="${fl}"` : ''}>${n === 0 ? 'FREE' : n}</button>`;
+    h += `<button class="${cls.join(' ')}" data-p="${esc(p.id)}" data-i="${i}" ${fl > 0 && !burned ? `data-f="${fl}"` : ''}>${n === 0 ? 'FREE' : n}</button>`;
   }
   return h + '</div>';
 }
@@ -215,7 +217,7 @@ function renderGame() {
         <button class="jbtn ${S.aim ? 'on' : ''}" id="jm" ${me.jams < 1 || over ? 'disabled' : ''}>${S.aim ? 'Cancel' : 'JAM (' + me.jams + ')'}</button>
         <button class="bingo ${ready ? 'ready' : ''}" id="bg" ${over ? 'disabled' : ''}>BINGO</button></div>
       ${cardHtml(me, true, g)}
-      <p class="note">${S.aim ? 'Now tap a square on a rival card to freeze it.' : 'Tap a number once it has been called. Called numbers glow.'}</p>
+      <p class="note">${S.aim ? 'Now tap a square on a rival card. A called number gets knocked out, any other freezes for 2 calls.' : 'Tap a number once it has been called. Called numbers glow.'}</p>
     </div>` : '<p class="note">You are watching this round.</p>'}
    </div>
    <div>${rivals.map(p => `<div class="rival"><div class="top"><i class="dot" style="background:${p.color}"></i><h4>${esc(p.name)}${p.bot ? ' (bot)' : ''}</h4><span class="sp"></span><span class="tiny">Jams ${p.jams}</span></div>${cardHtml(p, false, g)}</div>`).join('')}</div>
@@ -245,14 +247,14 @@ function squareTap(el) {
   if (pid === S.myId) {
     act({ t: 'mark', i }, r => {
       if (!r.ok) {
-        const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', done: '' }[r.why];
+        const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', missed: 'That square is out. Its number was called while it was jammed', done: '' }[r.why];
         if (m) toast(m);
         el.classList.add('shake');
       }
     });
   } else if (S.aim) {
     act({ t: 'jam', to: pid, i }, r => {
-      if (r.ok) { S.aim = false; toast('Jammed'); } else toast({ target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[r.why] || 'Cannot jam that');
+      if (r.ok) { S.aim = false; toast(r.burned ? 'Number knocked out' : 'Jammed for 2 calls'); } else toast({ target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[r.why] || 'Cannot jam that');
     });
   }
 }
@@ -337,7 +339,7 @@ async function startClient(code) {
         if (first || !G.find(S.g, S.myId)) { if (!G.find(S.g, S.myId)) hello(); }
         onState(d.g);
       } else if (d.t === 'res' && d.to === S.myId) {
-        const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[d.why];
+        const m = { notcalled: 'That number has not been called yet', frozen: 'That square is frozen', missed: 'That square is out. Its number was called while it was jammed', target: 'Pick an unmarked square', already: 'Already frozen', nojams: 'No jams left' }[d.why];
         if (m) toast(m);
       }
     },
