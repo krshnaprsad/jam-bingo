@@ -80,3 +80,6 @@ label{display:block;color:var(--dim);font-size:14px;margin:12px 0 6px}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @media(max-width:860px){.home,.play{grid-template-columns:1fr}.code{font-size:44px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.why{max-width:760px;width:calc(100% - 32px);margin:18px auto 40px}
+.why h2{margin:0 0 10px;font-size:15px;font-weight:600}
+.why p{margin:0;color:#cfcfcf;font-size:14px;line-height:1.6}
