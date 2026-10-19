@@ -1,1 +1,1 @@
-{"name":"jam-bingo","version":"1.0.0","description":"Peer to peer bingo where you can freeze rival squares","license": "SEE LICENSE IN LICENSE","scripts":{"test":"node game.test.js"}}
+{"name":"jam-bingo","version":"1.0.1","description":"Peer to peer bingo where you can freeze rival squares","license": "SEE LICENSE IN LICENSE","scripts":{"test":"node game.test.js"}}
